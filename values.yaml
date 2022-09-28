@@ -1,0 +1,126 @@
+general:
+  environment: stg
+  environmentFullTitle: Staging
+  teamName: dpr
+  name: application-name
+  namePostfix: webapi
+  namespace : abbas-helm-test
+  owner: a_bafekr
+  version: v1
+  zone: zone-z-1
+  cluster: cluster-stg-cluster
+  issue: DE-77
+
+
+deployment:
+  spec:
+    replicaCount: 3
+    strategy:
+      type: RollingUpdate
+      rollingUpdate:
+        maxSurge: 1
+        maxUnavailable: 0
+    template:
+      spec:
+        hostAliases:
+        - ip: 192.168.1.1
+          hostnames: 
+            - hub.docker.com
+        containers:
+          image:
+            app: hub.docker.com/stg/dpr/application-name-webapi
+            version: v0.0.9
+          ports:
+          - name: http-port
+            containerPort: 80
+          imagePullPolicy: IfNotPresent
+          env:
+          - name: TZ
+            value: "Asia/Tehran"
+          - name: ASPNETCORE_ENVIRONMENT
+            value: "Staging"
+          resources:
+            enabled: true
+            requests:
+              memory: 300Mi
+              cpu: 300m
+            limits:
+              memory: 1Gi
+              cpu: 1
+          readinessProbe:
+            enabled: true
+            httpGet:
+              path: /health/ready
+              port: http-port
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            enabled: true
+            httpGet:
+              path: /health/live
+              port: http-port
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          startupProbe:
+            enabled: true
+            httpGet:
+              path: /health/live
+              port: http-port
+            failureThreshold: 30
+            periodSeconds: 10
+          volumeMounts:
+            enabled: true
+            mountPath: /app/appsettings.Staging.json
+            subPath: appsettings.Staging.json
+        imagePullSecrets:
+          name: hub-docker-pullsecret
+        volumes:
+          enabled: true
+          configMap:
+            key: appsettings.Staging.json
+            path: appsettings.Staging.json
+
+service:
+  enabled: true
+  namePostfix: svc
+  spec:
+    type: ClusterIP
+    ports:
+    - port: 80
+      name: http
+      targetPort: 80
+  metadata:
+    annotations:
+      prometheus_io_scrape: "true"
+      filter_by_port_name: "true"
+      prometheus_io_path: "/metrics"
+      prometheus_io_port: "8080"
+
+
+serviceAccount:
+  create: false
+
+
+ingressRoute:
+  enabled: true
+  entryPoint: web
+
+hpa:
+  enabled: true
+  spec:
+    scaleTargetRef:
+      apiVersion: apps/v1
+    minReplicas: 2
+    maxReplicas: 10
+    metrics:
+      type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80
+
+configMap:
+  enabled: true
+  data:
+    key: appsettings.Staging.json
