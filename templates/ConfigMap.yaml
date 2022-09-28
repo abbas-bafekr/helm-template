@@ -1,0 +1,33 @@
+{{- if .Values.configMap.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}-config
+  namespace: {{ .Values.general.namespace }}
+  labels:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    version: {{ .Values.general.version }}
+    zone: {{ .Values.general.zone }}
+    env:  {{ .Values.general.environmentFullTitle }}
+    cluster: {{ .Values.general.cluster }}
+    team: {{ .Values.general.teamName }}
+    owner: {{ .Values.general.owner }}
+    builder: helm
+    microservice: {{ .Values.general.name }}
+  annotations:
+    owner: "{{ .Values.general.owner }}"
+    team: "{{ .Values.general.teamName }}"
+    issue: "{{ .Values.general.issue }}"
+    description: "{{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}} ConfigMap"
+data:
+  {{ .Values.configMap.data.key }}: |  
+    {
+      "Logging": {
+        "LogLevel": {
+          "Default": "Information",
+          "Microsoft.AspNetCore": "Warning"
+        }
+      },
+      "AllowedHosts": "*"
+    }
+{{- end }}
