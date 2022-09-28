@@ -1,0 +1,41 @@
+{{- if .Values.ingressRoute.enabled }}
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}-local-ingress-route
+  namespace: {{ .Values.general.namespace }}
+  labels:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    version: v1
+    zone: soshyant-z-1
+    env: {{ .Values.general.environment }}
+    cluster: {{ .Values.general.cluster }}
+    team: {{ .Values.general.teamName }}
+    owner: {{ .Values.general.owner }}
+    builder: helm
+    microservice: {{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+  annotations:
+    owner: "{{ .Values.general.owner }}"
+    team: "{{ .Values.general.teamName }}"
+    issue: "{{ .Values.general.issue }}"
+    description: "{{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}} Local Ingress Route"
+spec:
+  entryPoints:
+  - {{ .Values.ingressRoute.entryPoint }}
+  routes:
+  - match: Host(`{{ .Values.general.environment }}-{{ .Values.general.name }}.sntinfra.local`)
+    kind: Rule
+    services:
+    - name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}-{{ .Values.service.namePostfix}}
+      namespace: {{ .Values.general.namespace }}
+      passHostHeader: true
+      port: 80
+      sticky:
+        cookie:
+          httpOnly: true
+          name: cookie
+          secure: true
+          sameSite: none
+      strategy: RoundRobin
+      weight: 10
+{{- end }}

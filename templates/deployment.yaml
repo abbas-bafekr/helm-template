@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+  namespace: {{ .Values.general.namespace }}
+  labels:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    version: {{ .Values.general.version }}
+    zone: {{ .Values.general.zone }}
+    env:  {{ .Values.general.environmentFullTitle }}
+    cluster: {{ .Values.general.cluster }}
+    team: {{ .Values.general.teamName }}
+    owner: {{ .Values.general.owner }}
+    builder: helm
+    microservice: {{ .Values.general.name }}
+  annotations:
+    owner: "{{ .Values.general.owner }}"
+    team: "{{ .Values.general.teamName }}"
+    issue: "{{ .Values.general.issue }}"
+    description: "{{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}} Deployment"
+spec:
+  replicas: {{ .Values.deployment.spec.replicaCount }}
+  selector:
+    matchLabels:
+      app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+  strategy:
+    type: {{ .Values.deployment.spec.strategy.type }}
+    rollingUpdate:
+      maxSurge: {{ .Values.deployment.spec.strategy.rollingUpdate.maxSurge }}
+      maxUnavailable: {{ .Values.deployment.spec.strategy.rollingUpdate.maxUnavailable }}
+  template:
+    metadata:
+      labels:
+        app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    spec:
+      {{- with .Values.deployment.spec.template.spec.hostAliases }}
+      hostAliases:
+        {{- range $ha := . }}
+      - ip: "{{ $ha.ip }}"
+        hostnames:
+          {{- range $v := .hostnames }}
+        - "{{ $v }}"
+          {{- end }}
+        {{- end }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+        image: "{{ .Values.deployment.spec.template.spec.containers.image.app }}:{{ .Values.deployment.spec.template.spec.containers.image.version }}"
+        {{- with .Values.deployment.spec.template.spec.containers.ports }}
+        ports:
+          {{- range $p := . }}
+        - name: {{ $p.name }}
+          containerPort: {{ $p.containerPort }}
+          {{- end }}
+        {{- end }}
+        imagePullPolicy: {{ .Values.deployment.spec.template.spec.containers.imagePullPolicy }}
+        {{- with .Values.deployment.spec.template.spec.containers.env }}
+        env:
+        {{- range $env := . }}
+        - name: {{ $env.name }}
+          value: "{{ $env.value }}"
+        {{- end }}
+        {{- end }}
+        {{- if .Values.deployment.spec.template.spec.containers.resources.enabled }}
+        resources:
+          requests:
+            memory: "{{ .Values.deployment.spec.template.spec.containers.resources.requests.memory }}"
+            cpu: "{{ .Values.deployment.spec.template.spec.containers.resources.requests.cpu }}"
+          limits:
+            memory: "{{ .Values.deployment.spec.template.spec.containers.resources.limits.memory }}"
+            cpu: "{{ .Values.deployment.spec.template.spec.containers.resources.limits.cpu }}"
+        {{- end }}
+        {{- if .Values.deployment.spec.template.spec.containers.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.deployment.spec.template.spec.containers.readinessProbe.httpGet.path }}
+            port: {{ .Values.deployment.spec.template.spec.containers.readinessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.deployment.spec.template.spec.containers.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.deployment.spec.template.spec.containers.readinessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.deployment.spec.template.spec.containers.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.deployment.spec.template.spec.containers.livenessProbe.httpGet.path }}
+            port: {{ .Values.deployment.spec.template.spec.containers.livenessProbe.httpGet.port }}
+          initialDelaySeconds: {{ .Values.deployment.spec.template.spec.containers.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.deployment.spec.template.spec.containers.livenessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.deployment.spec.template.spec.containers.startupProbe.enabled }}
+        startupProbe:
+          httpGet:
+            path: {{ .Values.deployment.spec.template.spec.containers.startupProbe.httpGet.path }}
+            port: {{ .Values.deployment.spec.template.spec.containers.startupProbe.httpGet.port }}
+          failureThreshold: {{ .Values.deployment.spec.template.spec.containers.startupProbe.failureThreshold }}
+          periodSeconds: {{ .Values.deployment.spec.template.spec.containers.startupProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.deployment.spec.template.spec.containers.volumeMounts.enabled }}
+        volumeMounts:
+        - name: config-volume
+          mountPath: {{ .Values.deployment.spec.template.spec.containers.volumeMounts.mountPath }}
+          subPath: {{ .Values.deployment.spec.template.spec.containers.volumeMounts.subPath }}
+        {{- end }}
+      imagePullSecrets:
+        - name: {{ .Values.deployment.spec.template.spec.imagePullSecrets.name }}
+      {{- if .Values.deployment.spec.template.spec.volumes.enabled }}
+      volumes:
+        - name: config-volume
+          configMap:
+            name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}-config
+            items:
+            - key: {{ .Values.deployment.spec.template.spec.volumes.configMap.key }}
+              path: {{ .Values.deployment.spec.template.spec.volumes.configMap.path }}
+      {{- end }}

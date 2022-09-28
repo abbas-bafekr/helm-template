@@ -1,0 +1,36 @@
+{{- if .Values.service.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}-{{ .Values.service.namePostfix}}
+  namespace: {{ .Values.general.namespace }}
+  labels:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    version: {{ .Values.general.version }}
+    zone: {{ .Values.general.zone }}
+    env:  {{ .Values.general.environmentFullTitle }}
+    cluster: {{ .Values.general.cluster }}
+    team: {{ .Values.general.teamName }}
+    owner: {{ .Values.general.owner }}
+    builder: helm
+    microservice: {{ .Values.general.name }}
+  annotations:
+    owner: "{{ .Values.general.owner }}"
+    team: "{{ .Values.general.teamName }}"
+    issue: "{{ .Values.general.issue }}"
+    description: "{{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}} Service"
+    prometheus.io/scrape: "{{ .Values.service.metadata.annotations.prometheus_io_scrape }}"
+    filter.by.port.name: "{{ .Values.service.metadata.annotations.filter_by_port_name }}"
+    prometheus.io/path: "{{ .Values.service.metadata.annotations.prometheus_io_path }}"
+    prometheus.io/port: "{{ .Values.service.metadata.annotations.prometheus_io_port }}"
+spec:
+  type: {{ .Values.service.spec.type }}
+  ports:
+    {{- range $p := .Values.service.spec.ports }}
+    - port: {{ $p.port }}
+      targetPort: {{ $p.targetPort }}
+      name: {{ $p.name }}
+      {{- end }}  
+  selector:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+{{- end }}

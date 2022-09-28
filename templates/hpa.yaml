@@ -1,0 +1,36 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2beta2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+  namespace: {{ .Values.general.namespace }}
+  labels:
+    app: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+    version: {{ .Values.general.version }}
+    zone: {{ .Values.general.zone }}
+    env:  {{ .Values.general.environmentFullTitle }}
+    cluster: {{ .Values.general.cluster }}
+    team: {{ .Values.general.teamName }}
+    owner: {{ .Values.general.owner }}
+    builder: helm
+    microservice: {{ .Values.general.name }}
+  annotations:
+    owner: "{{ .Values.general.owner }}"
+    team: "{{ .Values.general.teamName }}"
+    issue: "{{ .Values.general.issue }}"
+    description: "{{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}} HorizontalPodAutoscaler"
+spec:
+  scaleTargetRef:
+    apiVersion: {{ .Values.hpa.spec.scaleTargetRef.apiVersion }}
+    kind: Deployment
+    name: {{ .Values.general.environment }}-{{ .Values.general.teamName }}-{{ .Values.general.name }}-{{ .Values.general.namePostfix}}
+  minReplicas: {{ .Values.hpa.spec.minReplicas }}
+  maxReplicas: {{ .Values.hpa.spec.maxReplicas }}
+  metrics:
+  - type: {{ .Values.hpa.spec.metrics.type }}
+    resource:
+      name: {{ .Values.hpa.spec.metrics.resource.name }}
+      target:
+        type: {{ .Values.hpa.spec.metrics.resource.target.type }}
+        averageUtilization: {{ .Values.hpa.spec.metrics.resource.target.averageUtilization }}
+{{- end }}
